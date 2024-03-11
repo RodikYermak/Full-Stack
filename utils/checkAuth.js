@@ -19,9 +19,4 @@ export default (req, res, next) => {
             message: 'Нет доступа',
         });
     }
-
-    // console.log(token);
-    // res.send(token);
-
-    // next();
 };
