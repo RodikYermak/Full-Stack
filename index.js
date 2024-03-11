@@ -1,12 +1,15 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { registerValidation } from './validations/auth.js';
 import { validationResult } from 'express-validator';
 
+import User from './models/User.js';
+
 mongoose
     .connect(
-        'mongodb+srv://RodikYermak:!rODIK123@cluster0.xoyzi5l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+        'mongodb+srv://RodikYermak:!rODIK123@cluster0.xoyzi5l.mongodb.net/blog?retryWrites=true&w=majority&appName=Cluster0'
     )
     .then(() => console.log('MongoDB connected...'))
     .catch((err) => console.log('DB error', err));
@@ -15,15 +18,30 @@ const app = express();
 
 app.use(express.json());
 
-app.post('/auth/register', registerValidation, (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json(errors.array());
-    }
+app.post('/auth/register', registerValidation, async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors.array());
+        }
 
-    res.json({
-        success: true,
-    });
+        const password = req.body.password;
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const doc = new User({
+            fullName: req.body.fullName,
+            email: req.body.email,
+            passwordHash: passwordHash,
+            avatarUrl: req.body.avatarUrl,
+        });
+
+        const user = await doc.save();
+
+        res.json(user);
+    } catch (error) {
+        res.json(error);
+    }
 });
 
 app.listen(4444, (err) => {
